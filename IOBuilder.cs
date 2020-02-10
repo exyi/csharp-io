@@ -7,19 +7,8 @@ namespace csharp_io
 {
     public static partial class IO
     {
-        public static TaskAwaiter<T> GetAwaiter<T>(this IO<T> io)
-        {
-            return io.UnsafePerformIO().GetAwaiter();
-            // var a = new IOAwaiter<T>(io);
-
-            // return a;
-        }
-    }
-
-    enum BuilderState: byte {
-        Running,
-        Exception,
-        Done
+        public static TaskAwaiter<T> GetAwaiter<T>(this IO<T> io) =>
+            io.UnsafePerformIO().GetAwaiter();
     }
 
     public class IOTaskMethodBuilder<T>
@@ -88,9 +77,12 @@ namespace csharp_io
             {
                 var type = builder.stateMachinePrototype.GetType();
                 var machine = (IAsyncStateMachine)Activator.CreateInstance(type);
+                // we have to clone the prototype machine so it can be run multiple times
                 foreach (var f in type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
                     f.SetValue(machine, f.GetValue(builder.stateMachinePrototype));
                 var tcs = new TaskCompletionSource<T>();
+
+                // replace the builder, so we can observe when this specific machine ends it's execution
                 var betterBuilder = new TcsBuilder(tcs);
                 type.GetField("<>t__builder", BindingFlags.Public | BindingFlags.Instance)
                     .SetValue(machine, betterBuilder);
@@ -111,42 +103,6 @@ namespace csharp_io
                 tcs.SetException(exception);
             protected override void SetResultImpl(T result) =>
                 tcs.SetResult(result);
-        }
-    }
-
-
-    public struct IOAwaiter<T>: INotifyCompletion
-    {
-        readonly IO<T> io;
-
-        bool done;
-        T result;
-        Action onCompleted;
-
-        public IOAwaiter(IO<T> io)
-        {
-            this.io = io;
-            this.done = false;
-            this.result = default;
-            this.onCompleted = null;
-        }
-
-        public bool IsCompleted => false;
-        [Obsolete("Just don't use this manually")]
-        public T GetResult() =>
-            done ? result :
-            throw new Exception("IO action not completed. Just don't call GetResult manually!");
-        public void OnCompleted(Action completion)
-        {
-            if (done) completion();
-            else onCompleted += completion;
-        }
-
-        internal void Complete(T result)
-        {
-            this.done = true;
-            this.result = result;
-            this.onCompleted?.Invoke();
         }
     }
 }

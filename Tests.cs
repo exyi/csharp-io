@@ -58,5 +58,24 @@ namespace csharp_io
 
             // Assert.NotEqual(await a, await a);
         }
+
+        async IO<int> FailingAction()
+        {
+            throw new Exception("the action does not work");
+        }
+
+        [Fact]
+        public void LazyEvaluation()
+        {
+            FailingAction();
+            // and nothing happens, the IO action is ignored
+        }
+
+        [Fact]
+        public void Exceptions()
+        {
+            var e = Assert.ThrowsAny<Exception>(() => FailingAction().UnsafePerformIO().Result);
+            Assert.Contains("the action does not work", e.Message); // it's gonna be some AggregateException
+        }
     }
 }
