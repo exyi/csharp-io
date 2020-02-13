@@ -1,6 +1,8 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace csharp_io
 {
@@ -28,6 +30,18 @@ namespace csharp_io
             var b_ = b.UnsafePerformIO();
             var c_ = c.UnsafePerformIO();
             return (await a_, await b_, await c_);
+        }
+        public static async IO<T[]> All<T>(IEnumerable<IO<T>> a)
+        {
+            var a_ = a.Select(a => a.UnsafePerformIO()).ToArray();
+            return await Task.WhenAll(a_);
+        }
+        public static async IO<T[]> Sequence<T>(IEnumerable<IO<T>> a)
+        {
+            var r = new List<T>();
+            foreach (var x in a)
+                r.Add(await x);
+            return r.ToArray();
         }
         class PureIO<T>: IO<T>
         {
