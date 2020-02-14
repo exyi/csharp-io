@@ -43,6 +43,8 @@ namespace csharp_io
                 r.Add(await x);
             return r.ToArray();
         }
+        public static async IO<U[]> Select<T, U>(this IO<T> x, Func<T, U> f) => f(await x);
+        public static async IO<U[]> SelectMany<T, U>(this IO<T> x, Func<T, IO<U>> f) => await f(await x);
         class PureIO<T>: IO<T>
         {
             private readonly T result;
