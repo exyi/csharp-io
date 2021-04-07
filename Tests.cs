@@ -61,7 +61,7 @@ namespace csharp_io
 
         async IO<int> FailingAction()
         {
-            throw new Exception("the action does not work");
+            throw new AggregateException("the action does not work");
         }
 
         [Fact]
@@ -74,7 +74,7 @@ namespace csharp_io
         [Fact]
         public void Exceptions()
         {
-            var e = Assert.ThrowsAny<Exception>(() => FailingAction().UnsafePerformIO().Result);
+            var e = Assert.Throws<AggregateException>(() => FailingAction().UnsafePerformIO().Result);
             Assert.Contains("the action does not work", e.Message); // it's gonna be some AggregateException
         }
     }
